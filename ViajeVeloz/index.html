@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0ea5e9">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ViajeVeloz">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0ea5e9">
+<title>ViajeVeloz</title>
+<style>
+  :root{
+    --bg:#eef2f7; --card:#fff; --text:#0f172a; --muted:#64748b;
+    --primary:#0ea5e9; --primary-d:#0369a1; --border:#e2e8f0;
+    --danger:#dc2626; --ok:#059669;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);color:var(--text);
+    padding-bottom:calc(80px + env(safe-area-inset-bottom));
+  }
+  header{
+    position:sticky;top:0;z-index:5;
+    background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;
+    padding:14px 16px;padding-top:calc(14px + env(safe-area-inset-top));
+    box-shadow:0 2px 8px rgba(0,0,0,.15);
+  }
+  header h1{margin:0;font-size:18px;font-weight:800;letter-spacing:.3px;display:flex;align-items:center;gap:8px}
+  header h1 small{font-size:11px;font-weight:600;opacity:.85;background:rgba(255,255,255,.2);
+    padding:2px 8px;border-radius:20px;margin-left:auto}
+  main{padding:12px;max-width:640px;margin:0 auto}
+  .view{display:none}
+  .view.active{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+  .card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:12px;
+        box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card h3{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+
+  .item{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:8px;
+        display:flex;gap:10px;align-items:flex-start;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .grow{flex:1;min-width:0}
+  .t{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .s{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.4}
+  .right{text-align:right;flex-shrink:0}
+  .money{font-weight:800;font-size:15px;color:var(--primary-d)}
+  .pct{font-size:11.5px;color:#b45309;font-weight:700;margin-top:2px}
+  .icon{background:none;border:0;font-size:16px;padding:4px;cursor:pointer;opacity:.7}
+  .icon:active{opacity:1}
+  .empty{text-align:center;color:var(--muted);font-size:14px;padding:36px 16px;line-height:1.6}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .stat{background:var(--card);border-radius:12px;padding:10px;text-align:center;
+        box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .stat .v{font-weight:800;font-size:15px;color:var(--primary-d)}
+  .stat .k{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+  .tag{display:inline-block;background:#e0f2fe;color:#0369a1;font-size:11px;
+       padding:2px 8px;border-radius:20px;font-weight:700;margin-right:4px}
+
+  label{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:700;
+        color:var(--muted);margin-bottom:10px}
+  input,select{width:100%;padding:11px;border:1px solid var(--border);border-radius:10px;
+        font-size:15px;font-family:inherit;background:#fff;color:var(--text)}
+  input:focus,select:focus{outline:2px solid var(--primary);border-color:transparent}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .row{display:flex;gap:8px}
+  .row>*{flex:1}
+  .btn{padding:12px;border:0;border-radius:10px;background:var(--primary);color:#fff;
+       font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}
+  .btn.ghost{background:#eef2f7;color:var(--text)}
+  .btn.danger{background:#fee2e2;color:var(--danger)}
+  .btn:active{transform:scale(.98)}
+
+  .preview{background:#f0f9ff;border:1px dashed var(--primary);border-radius:10px;
+        padding:12px;margin-bottom:12px;font-size:13px;line-height:1.7}
+  .preview b{color:var(--primary-d)}
+  .preview .big{font-size:20px;font-weight:800;color:var(--primary-d);display:block;margin-top:2px}
+
+  #fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));
+       width:56px;height:56px;border-radius:50%;border:0;background:var(--primary);
+       color:#fff;font-size:28px;line-height:1;display:flex;align-items:center;
+       justify-content:center;box-shadow:0 6px 16px rgba(14,165,233,.5);z-index:11;cursor:pointer}
+  #fab:active{transform:scale(.95)}
+
+  nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;
+      border-top:1px solid var(--border);padding-bottom:env(safe-area-inset-bottom);z-index:10}
+  nav button{flex:1;background:none;border:0;padding:9px 0 7px;font-size:19px;
+      color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;
+      font-family:inherit;cursor:pointer}
+  nav button span{font-size:10.5px;font-weight:700}
+  nav button.active{color:var(--primary-d)}
+
+  dialog{border:0;border-radius:18px;padding:0;width:min(94vw,440px);background:var(--card);color:var(--text)}
+  dialog::backdrop{background:rgba(15,23,42,.55)}
+  dialog form{padding:18px;max-height:86vh;overflow-y:auto;margin:0}
+  dialog h2{margin:0 0 14px;font-size:17px;color:var(--primary-d)}
+  .dlg-actions{display:flex;gap:8px;margin-top:6px}
+  .dlg-actions .btn{flex:1}
+  .req::after{content:' *';color:var(--danger)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🚕 ViajeVeloz <small>Agencia de taxis</small></h1>
+</header>
+
+<main>
+  <section id="view-viajes" class="view active"></section>
+  <section id="view-choferes" class="view"></section>
+  <section id="view-clientes" class="view"></section>
+  <section id="view-ajustes" class="view"></section>
+</main>
+
+<button id="fab" aria-label="Agregar">+</button>
+
+<nav>
+  <button data-view="viajes" class="active">🚕<span>Viajes</span></button>
+  <button data-view="choferes">🧑‍✈️<span>Choferes</span></button>
+  <button data-view="clientes">👥<span>Clientes</span></button>
+  <button data-view="ajustes">⚙️<span>Ajustes</span></button>
+</nav>
+
+<dialog id="dlg"></dialog>
+
+<script>
+/* =========================================================
+   ALMACENAMIENTO
+   ========================================================= */
+const LS_KEY = 'viajeveloz_v1';
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const IVA_PORC = 0.15;   // 15 % del costo total
+
+function normalizar(d){
+  d = (d && typeof d==='object') ? d : {};
+  d.choferes = Array.isArray(d.choferes) ? d.choferes : [];
+  d.clientes = Array.isArray(d.clientes) ? d.clientes : [];
+  d.viajes   = Array.isArray(d.viajes)   ? d.viajes   : [];
+  d.config   = Object.assign({ tarifaKm: 1.5, moneda: '$' }, d.config || {});
+  return d;
+}
+
+const store = {
+  data:null,
+  load(){
+    let d=null;
+    try{ d = JSON.parse(localStorage.getItem(LS_KEY)||'null'); }catch(e){}
+    this.data = normalizar(d);
+  },
+  save(){ localStorage.setItem(LS_KEY, JSON.stringify(this.data)); }
+};
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+const esc = s => String(s ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => store.data.config.moneda + (Number(n)||0).toFixed(2);
+const fechaFmt = ts => new Date(ts).toLocaleString('es',
+  {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+const VEHI = ['Auto','Camioneta','Triciclo'];
+const vehiIcon = v => v==='Auto' ? '🚗' : v==='Camioneta' ? '🚙' : v==='Triciclo' ? '🛺' : '🚘';
+
+const nomCliente = id => {
+  const c = store.data.clientes.find(x=>x.id===id);
+  return c ? `${c.nombre} ${c.apellidos}` : '(eliminado)';
+};
+const nomChofer = id => {
+  const c = store.data.choferes.find(x=>x.id===id);
+  return c ? `${c.nombre} ${c.apellidos}` : '(eliminado)';
+};
+
+/* Distancia entre dos puntos (Haversine, km) */
+function haversine(la1,lo1,la2,lo2){
+  const R=6371, rad=g=>g*Math.PI/180;
+  const dLa=rad(la2-la1), dLo=rad(lo2-lo1);
+  const a=Math.sin(dLa/2)**2 + Math.cos(rad(la1))*Math.cos(rad(la2))*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
+const TITULOS = {viajes:'🚕 Viajes',choferes:'🧑‍✈️ Choferes',clientes:'👥 Clientes',ajustes:'⚙️ Ajustes'};
+let vistaActual='viajes';
+const dlg = document.getElementById('dlg');
+
+function irA(v){
+  vistaActual=v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.toggle('active', s.id==='view-'+v));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active', b.dataset.view===v));
+  document.getElementById('titulo')?.remove(); // no hay h1 aparte, el header ya lo tiene
+  document.getElementById('fab').style.display = (v==='ajustes') ? 'none' : 'flex';
+  render();
+}
+
+function render(){
+  renderViajes();
+  renderChoferes();
+  renderClientes();
+  if (vistaActual==='ajustes') renderAjustes();
+}
+
+/* =========================================================
+   VISTA: VIAJES
+   ========================================================= */
+function renderViajes(){
+  const { viajes } = store.data;
+  const cont = document.getElementById('view-viajes');
+
+  const totalIngresos = viajes.reduce((s,v)=>s+(v.costo||0),0);
+  const totalPct      = viajes.reduce((s,v)=>s+(v.porcentaje||0),0);
+  const totalKm       = viajes.reduce((s,v)=>s+(v.distanciaTotal||0),0);
+
+  const stats = `
+    <div class="stats">
+      <div class="stat"><div class="v">${viajes.length}</div><div class="k">Viajes</div></div>
+      <div class="stat"><div class="v">${totalKm.toFixed(1)}</div><div class="k">Km tot.</div></div>
+      <div class="stat"><div class="v">${money(totalIngresos)}</div><div class="k">Costo total</div></div>
+    </div>`;
+
+  if(!viajes.length){
+    cont.innerHTML = stats + `<div class="empty">Aún no hay viajes.<br>Toca el botón <b>+</b> para registrar el primero.</div>`;
+    return;
+  }
+
+  const lista = [...viajes].sort((a,b)=>b.fecha-a.fecha).map(v=>`
+    <div class="item">
+      <div class="grow">
+        <div class="t">${esc(v.recogida)} → ${esc(v.destino)}</div>
+        <div class="s">👤 ${esc(nomCliente(v.clienteId))}</div>
+        <div class="s">🧑‍✈️ ${esc(nomChofer(v.choferId))}</div>
+        <div class="s">📍 ${v.distancia.toFixed(2)} km × 2 = <b>${v.distanciaTotal.toFixed(2)} km</b> · 🕒 ${fechaFmt(v.fecha)}</div>
+      </div>
+      <div class="right">
+        <div class="money">${money(v.costo)}</div>
+        <div class="pct">15 % = ${money(v.porcentaje)}</div>
+        <div style="margin-top:4px">
+          <button class="icon" data-act="edit-viaje" data-id="${v.id}">✏️</button>
+          <button class="icon" data-act="del-viaje" data-id="${v.id}">🗑️</button>
+        </div>
+      </div>
+    </div>`).join('');
+
+  cont.innerHTML = stats + lista +
+    `<div class="card" style="text-align:center;font-size:13px;color:var(--muted)">
+       <b>Total porcentajes (15 %):</b> <span style="color:#b45309;font-weight:800">${money(totalPct)}</span>
+     </div>`;
+}
+
+/* =========================================================
+   VISTA: CHOFERES
+   ========================================================= */
+function renderChoferes(){
+  const { choferes, viajes } = store.data;
+  const cont = document.getElementById('view-choferes');
+
+  if(!choferes.length){
+    cont.innerHTML = `<div class="empty">Sin choferes registrados.<br>Toca <b>+</b> para agregar uno.</div>`;
+    return;
+  }
+
+  cont.innerHTML = choferes.map(c=>{
+    const propios = viajes.filter(v=>v.choferId===c.id);
+    const ingresos = propios.reduce((s,v)=>s+(v.costo||0),0);
+    const pct = propios.reduce((s,v)=>s+(v.porcentaje||0),0);
+    return `
+      <div class="item">
+        <div class="grow">
+          <div class="t">${esc(c.nombre)} ${esc(c.apellidos)}</div>
+          <div class="s">🪪 ID: <b>${esc(c.idNum)}</b></div>
+          <div class="s">📍 ${esc(c.municipio||'—')}</div>
+          <div class="s">${vehiIcon(c.vehiculo)} ${esc(c.vehiculo)}</div>
+          <div class="s">${propios.length} viajes · ${money(ingresos)} · 15 % = ${money(pct)}</div>
+        </div>
+        <div class="right">
+          <button class="icon" data-act="edit-chofer" data-id="${c.id}">✏️</button>
+          <button class="icon" data-act="del-chofer" data-id="${c.id}">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* =========================================================
+   VISTA: CLIENTES
+   ========================================================= */
+function renderClientes(){
+  const { clientes, viajes } = store.data;
+  const cont = document.getElementById('view-clientes');
+
+  if(!clientes.length){
+    cont.innerHTML = `<div class="empty">Sin clientes registrados.<br>Toca <b>+</b> para agregar uno.</div>`;
+    return;
+  }
+
+  cont.innerHTML = clientes.map(c=>{
+    const propios = viajes.filter(v=>v.clienteId===c.id);
+    const gastado = propios.reduce((s,v)=>s+(v.costo||0),0);
+    return `
+      <div class="item">
+        <div class="grow">
+          <div class="t">${esc(c.nombre)} ${esc(c.apellidos)}</div>
+          <div class="s">🪪 ID: <b>${esc(c.idNum)}</b></div>
+          <div class="s">${propios.length} viajes · ${money(gastado)}</div>
+        </div>
+        <div class="right">
+          <button class="icon" data-act="edit-cliente" data-id="${c.id}">✏️</button>
+          <button class="icon" data-act="del-cliente" data-id="${c.id}">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* =========================================================
+   VISTA: AJUSTES
+   ========================================================= */
+function renderAjustes(){
+  const c = store.data.config;
+  const cont = document.getElementById('view-ajustes');
+
+  cont.innerHTML = `
+    <div class="card">
+      <h3>Tarifa por kilómetro</h3>
+      <form id="frm-config">
+        <label>Moneda<input name="moneda" maxlength="4" value="${esc(c.moneda)}"></label>
+        <label>Precio por km<input name="tarifaKm" type="number" step="0.01" min="0" value="${c.tarifaKm}"></label>
+        <button class="btn" type="submit">Guardar tarifa</button>
+      </form>
+      <p class="s" style="margin-top:10px;white-space:normal">
+        Fórmula aplicada: <b>km × 2 × tarifa por km = costo total</b>.<br>
+        El porcentaje es el <b>15 %</b> del costo total.
+      </p>
+    </div>
+
+    <div class="card">
+      <h3>Copia de seguridad</h3>
+      <div class="row">
+        <button class="btn ghost" id="btn-export">⬇️ Exportar</button>
+        <button class="btn ghost" id="btn-import">⬆️ Importar</button>
+      </div>
+      <input type="file" id="file-import" accept="application/json" hidden>
+      <button class="btn danger" id="btn-clear" style="width:100%;margin-top:10px">Borrar todos los datos</button>
+    </div>
+
+    <p class="empty" style="padding:10px">Los datos se guardan solo en este dispositivo.<br>Exporta periódicamente tu copia de seguridad.</p>
+  `;
+
+  cont.querySelector('#frm-config').onsubmit = e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    store.data.config = {
+      moneda:(f.get('moneda')||'$').trim()||'$',
+      tarifaKm: parseFloat(f.get('tarifaKm'))||0
+    };
+    store.save();
+    alert('Tarifa actualizada ✔');
+    render();
+  };
+
+  cont.querySelector('#btn-export').onclick = () => {
+    const blob = new Blob([JSON.stringify(store.data,null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `viajeveloz-${new Date().toISOString().slice(0,10)}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+  };
+
+  const fi = cont.querySelector('#file-import');
+  cont.querySelector('#btn-import').onclick = () => fi.click();
+  fi.onchange = e => {
+    const file = e.target.files[0]; if(!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const d = JSON.parse(r.result);
+        if(!d || !Array.isArray(d.choferes)) throw new Error('Formato inválido');
+        store.data = normalizar(d); store.save();
+        alert('Datos importados ✔'); render();
+      }catch(err){ alert('No se pudo importar: '+err.message); }
+    };
+    r.readAsText(file); fi.value='';
+  };
+
+  cont.querySelector('#btn-clear').onclick = () => {
+    if(!confirm('⚠️ Se borrarán TODOS los datos. ¿Continuar?')) return;
+    if(!confirm('Esta acción no se puede deshacer. ¿Seguro?')) return;
+    localStorage.removeItem(LS_KEY); store.load(); render();
+  };
+}
+
+/* =========================================================
+   FORMULARIOS
+   ========================================================= */
+function cerrarBoton(form){
+  const b = form.querySelector('[data-close]');
+  if(b) b.onclick = () => dlg.close();
+}
+
+/* ---------- CHOFER ---------- */
+function formChofer(id){
+  const c = id ? store.data.choferes.find(x=>x.id===id) : null;
+  dlg.innerHTML = `
+    <form id="frm">
+      <h2>${c?'Editar':'Nuevo'} chofer</h2>
+      <div class="grid2">
+        <label class="req">Nombre<input name="nombre" required value="${esc(c?.nombre||'')}"></label>
+        <label class="req">Apellidos<input name="apellidos" required value="${esc(c?.apellidos||'')}"></label>
+      </div>
+      <label class="req">ID (documento)<input name="idNum" required value="${esc(c?.idNum||'')}"></label>
+      <label>Municipio<input name="municipio" value="${esc(c?.municipio||'')}"></label>
+      <label class="req">Vehículo
+        <select name="vehiculo" required>
+          ${VEHI.map(v=>`<option value="${v}" ${c?.vehiculo===v?'selected':''}>${vehiIcon(v)} ${v}</option>`).join('')}
+        </select>
+      </label>
+      <div class="dlg-actions">
+        <button type="button" class="btn ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn">Guardar</button>
+      </div>
+    </form>`;
+  dlg.showModal();
+  const f = dlg.querySelector('#frm'); cerrarBoton(f);
+  f.onsubmit = e => {
+    e.preventDefault();
+    const d = new FormData(e.target);
+    const obj = {
+      nombre: d.get('nombre').trim(),
+      apellidos: d.get('apellidos').trim(),
+      idNum: d.get('idNum').trim(),
+      municipio: d.get('municipio').trim(),
+      vehiculo: d.get('vehiculo')
+    };
+    if(c) Object.assign(c,obj);
+    else store.data.choferes.push({id:uid(), ...obj});
+    store.save(); dlg.close(); render();
+  };
+}
+
+/* ---------- CLIENTE ---------- */
+function formCliente(id){
+  const c = id ? store.data.clientes.find(x=>x.id===id) : null;
+  dlg.innerHTML = `
+    <form id="frm">
+      <h2>${c?'Editar':'Nuevo'} cliente</h2>
+      <div class="grid2">
+        <label class="req">Nombre<input name="nombre" required value="${esc(c?.nombre||'')}"></label>
+        <label class="req">Apellidos<input name="apellidos" required value="${esc(c?.apellidos||'')}"></label>
+      </div>
+      <label class="req">ID (documento)<input name="idNum" required value="${esc(c?.idNum||'')}"></label>
+      <div class="dlg-actions">
+        <button type="button" class="btn ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn">Guardar</button>
+      </div>
+    </form>`;
+  dlg.showModal();
+  const f = dlg.querySelector('#frm'); cerrarBoton(f);
+  f.onsubmit = e => {
+    e.preventDefault();
+    const d = new FormData(e.target);
+    const obj = {
+      nombre: d.get('nombre').trim(),
+      apellidos: d.get('apellidos').trim(),
+      idNum: d.get('idNum').trim()
+    };
+    if(c) Object.assign(c,obj);
+    else store.data.clientes.push({id:uid(), ...obj});
+    store.save(); dlg.close(); render();
+  };
+}
+
+/* ---------- VIAJE ---------- */
+function formViaje(id){
+  const v = id ? store.data.viajes.find(x=>x.id===id) : null;
+  const { clientes, choferes, config } = store.data;
+
+  if(!clientes.length || !choferes.length){
+    alert('Antes de registrar un viaje necesitas al menos:\n\n'+
+          (clientes.length?'':'• Un cliente\n')+
+          (choferes.length?'':'• Un chofer'));
+    return;
+  }
+
+  const optC = clientes.map(c=>
+    `<option value="${c.id}" ${v?.clienteId===c.id?'selected':''}>${esc(c.nombre)} ${esc(c.apellidos)} (ID: ${esc(c.idNum)})</option>`).join('');
+  const optD = choferes.map(c=>
+    `<option value="${c.id}" ${v?.choferId===c.id?'selected':''}>${esc(c.nombre)} ${esc(c.apellidos)} · ${vehiIcon(c.vehiculo)} ${esc(c.vehiculo)}</option>`).join('');
+
+  dlg.innerHTML = `
+    <form id="frm">
+      <h2>${v?'Editar':'Nuevo'} viaje</h2>
+
+      <label class="req">Cliente<select name="clienteId" required>${optC}</select></label>
+      <label class="req">Chofer<select name="choferId" required>${optD}</select></label>
+
+      <label class="req">Lugar de recogida<input name="recogida" required
+             placeholder="Ej. Av. Central #123" value="${esc(v?.recogida||'')}"></label>
+      <label class="req">Destino<input name="destino" required
+             placeholder="Ej. Aeropuerto" value="${esc(v?.destino||'')}"></label>
+
+      <label class="req">Distancia entre recogida y destino (km)
+        <input id="in-km" name="distancia" type="number" step="0.01" min="0" required
+               value="${v?v.distancia:''}"></label>
+
+      <details style="background:#f8fafc;border-radius:10px;padding:10px;margin-bottom:12px">
+        <summary style="font-size:13px;font-weight:700;color:var(--muted);cursor:pointer">
+          📍 Calcular km por coordenadas (opcional)
+        </summary>
+        <div class="grid2" style="margin-top:10px">
+          <label>Lat. recogida<input name="lat1" type="number" step="any" value="${v?.lat1??''}"></label>
+          <label>Lon. recogida<input name="lng1" type="number" step="any" value="${v?.lng1??''}"></label>
+          <label>Lat. destino<input name="lat2" type="number" step="any" value="${v?.lat2??''}"></label>
+          <label>Lon. destino<input name="lng2" type="number" step="any" value="${v?.lng2??''}"></label>
+        </div>
+        <button type="button" class="btn ghost" id="btn-dist" style="width:100%">Calcular distancia</button>
+        <p class="s" style="white-space:normal;margin:8px 0 0">Distancia en línea recta. Ajusta el valor si la ruta real es más larga.</p>
+      </details>
+
+      <label class="req">Tarifa por km
+        <input id="in-tar" name="tarifaKm" type="number" step="0.01" min="0" required
+               value="${v?v.tarifaKm:config.tarifaKm}"></label>
+
+      <label>Fecha y hora
+        <input name="fecha" type="datetime-local" value="${toLocalInput(v?v.fecha:Date.now())}"></label>
+
+      <div class="preview">
+        Distancia total (km × 2): <b id="p-dist">0.00 km</b><br>
+        Costo total del viaje:
+        <span class="big" id="p-cost">—</span>
+        Porcentaje (15 %):
+        <b id="p-pct" style="display:block;margin-top:4px;color:#b45309">—</b>
+      </div>
+
+      <div class="dlg-actions">
+        <button type="button" class="btn ghost" data-close>Cancelar</button>
+        <button type="submit" class="btn">Guardar</button>
+      </div>
+    </form>`;
+
+  dlg.showModal();
+  const f = dlg.querySelector('#frm'); cerrarBoton(f);
+
+  const q = s => f.querySelector(s);
+  const preview = () => {
+    const km  = parseFloat(q('#in-km').value) || 0;
+    const tar = parseFloat(q('#in-tar').value) || 0;
+    const distTotal = km * 2;
+    const costo = distTotal * tar;
+    const pct = costo * IVA_PORC;
+    q('#p-dist').textContent = distTotal.toFixed(2) + ' km';
+    q('#p-cost').textContent = money(costo);
+    q('#p-pct').textContent  = money(pct);
+  };
+  f.addEventListener('input', preview);
+  preview();
+
+  q('#btn-dist').onclick = () => {
+    const g = n => parseFloat(f.querySelector(`[name="${n}"]`).value);
+    const [a,b,c,d] = [g('lat1'),g('lng1'),g('lat2'),g('lng2')];
+    if([a,b,c,d].some(isNaN)){ alert('Completa las 4 coordenadas.'); return; }
+    q('#in-km').value = haversine(a,b,c,d).toFixed(2);
+    preview();
+  };
+
+  f.onsubmit = e => {
+    e.preventDefault();
+    const g = n => f.querySelector(`[name="${n}"]`).value;
+    const num = n => parseFloat(g(n)) || 0;
+
+    const distancia = num('distancia');
+    const tarifaKm  = num('tarifaKm');
+    const distanciaTotal = distancia * 2;
+    const costo = +(distanciaTotal * tarifaKm).toFixed(2);
+    const porcentaje = +(costo * IVA_PORC).toFixed(2);
+
+    const obj = {
+      clienteId: g('clienteId'),
+      choferId:  g('choferId'),
+      recogida:  g('recogida').trim(),
+      destino:   g('destino').trim(),
+      distancia,
+      distanciaTotal,
+      tarifaKm,
+      costo,
+      porcentaje,
+      fecha: new Date(g('fecha')).getTime(),
+      lat1: g('lat1')?+g('lat1'):null,
+      lng1: g('lng1')?+g('lng1'):null,
+      lat2: g('lat2')?+g('lat2'):null,
+      lng2: g('lng2')?+g('lng2'):null
+    };
+
+    if(v) Object.assign(v,obj);
+    else store.data.viajes.push({id:uid(), ...obj});
+
+    store.save(); dlg.close(); render();
+  };
+}
+
+function toLocalInput(ts){
+  const d = new Date(ts), p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+/* =========================================================
+   EVENTOS
+   ========================================================= */
+document.querySelectorAll('nav button').forEach(b=> b.onclick = () => irA(b.dataset.view));
+
+document.getElementById('fab').onclick = () => {
+  if(vistaActual==='viajes')   formViaje();
+  if(vistaActual==='choferes') formChofer();
+  if(vistaActual==='clientes') formCliente();
+};
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]'); if(!btn) return;
+  const { act, id } = btn.dataset;
+
+  if(act==='edit-viaje')   formViaje(id);
+  if(act==='edit-chofer')  formChofer(id);
+  if(act==='edit-cliente') formCliente(id);
+
+  if(act==='del-viaje' && confirm('¿Eliminar este viaje?')){
+    store.data.viajes = store.data.viajes.filter(x=>x.id!==id);
+    store.save(); render();
+  }
+  if(act==='del-chofer' && confirm('¿Eliminar este chofer? Los viajes ya registrados se conservan.')){
+    store.data.choferes = store.data.choferes.filter(x=>x.id!==id);
+    store.save(); render();
+  }
+  if(act==='del-cliente' && confirm('¿Eliminar este cliente? Los viajes ya registrados se conservan.')){
+    store.data.clientes = store.data.clientes.filter(x=>x.id!==id);
+    store.save(); render();
+  }
+});
+
+/* =========================================================
+   INICIO
+   ========================================================= */
+store.load();
+irA('viajes');
+</script>
+<script>
+  // Registrar el Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(reg => console.log('✅ Service Worker registrado:', reg.scope))
+        .catch(err => console.error('❌ Error al registrar SW:', err));
+    });
+  }
+</script>
+</body>
+</html>
